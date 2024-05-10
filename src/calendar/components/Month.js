@@ -1,9 +1,9 @@
-import { createNamespace } from '../../utils';
+import { createNamespace, addUnit } from '../../utils';
+import { setScrollTop } from '../../utils/dom/scroll';
 import {
   t,
   bem,
   compareDay,
-  ROW_HEIGHT,
   getPrevDay,
   getNextDay,
   formatMonthTitle,
@@ -27,6 +27,7 @@ export default createComponent({
     allowSameDay: Boolean,
     showSubtitle: Boolean,
     showMonthTitle: Boolean,
+    firstDayOfWeek: Number,
   },
 
   data() {
@@ -40,8 +41,20 @@ export default createComponent({
       return formatMonthTitle(this.date);
     },
 
+    rowHeightWithUnit() {
+      return addUnit(this.rowHeight);
+    },
+
     offset() {
-      return this.date.getDay();
+      const { firstDayOfWeek } = this;
+
+      const realDay = this.date.getDay();
+
+      if (!firstDayOfWeek) {
+        return realDay;
+      }
+
+      return (realDay + 7 - this.firstDayOfWeek) % 7;
     },
 
     totalDay() {
@@ -52,15 +65,13 @@ export default createComponent({
       return this.visible || !this.lazyRender;
     },
 
-    monthStyle() {
-      if (!this.shouldRender) {
-        const padding =
-          Math.ceil((this.totalDay + this.offset) / 7) * this.rowHeight;
-
-        return {
-          paddingBottom: `${padding}px`,
-        };
+    placeholders() {
+      const rows = [];
+      const count = Math.ceil((this.totalDay + this.offset) / 7);
+      for (let day = 1; day <= count; day++) {
+        rows.push({ type: 'placeholder' });
       }
+      return rows;
     },
 
     days() {
@@ -92,18 +103,19 @@ export default createComponent({
 
   methods: {
     getHeight() {
-      if (!this.height) {
-        this.height = this.$el.getBoundingClientRect().height;
-      }
-      return this.height;
+      return this.$el?.getBoundingClientRect().height || 0;
     },
 
-    scrollIntoView() {
-      if (this.showSubtitle) {
-        this.$refs.days.scrollIntoView();
-      } else {
-        this.$refs.month.scrollIntoView();
-      }
+    scrollIntoView(body) {
+      const { days, month } = this.$refs;
+      const el = this.showSubtitle ? days : month;
+
+      const scrollTop =
+        el.getBoundingClientRect().top -
+        body.getBoundingClientRect().top +
+        body.scrollTop;
+
+      setScrollTop(body, scrollTop);
     },
 
     getMultipleDayType(day) {
@@ -169,6 +181,10 @@ export default createComponent({
         return 'disabled';
       }
 
+      if (currentDate === null) {
+        return;
+      }
+
       if (type === 'single') {
         return compareDay(day, currentDate) === 0 ? 'selected' : '';
       }
@@ -195,14 +211,17 @@ export default createComponent({
     },
 
     getDayStyle(type, index) {
-      const style = {};
+      const style = {
+        height: this.rowHeightWithUnit,
+      };
+
+      if (type === 'placeholder') {
+        style.width = '100%';
+        return style;
+      }
 
       if (index === 0) {
         style.marginLeft = `${(100 * this.offset) / 7}%`;
-      }
-
-      if (this.rowHeight !== ROW_HEIGHT) {
-        style.height = `${this.rowHeight}px`;
       }
 
       if (this.color) {
@@ -229,26 +248,43 @@ export default createComponent({
     },
 
     genMark() {
-      if (this.showMark) {
+      if (this.showMark && this.shouldRender) {
         return <div class={bem('month-mark')}>{this.date.getMonth() + 1}</div>;
       }
     },
 
     genDays() {
-      if (this.shouldRender) {
+      const days = this.shouldRender ? this.days : this.placeholders;
+      return (
+        <div ref="days" role="grid" class={bem('days')}>
+          {this.genMark()}
+          {days.map(this.genDay)}
+        </div>
+      );
+    },
+
+    genTopInfo(item) {
+      const slot = this.$scopedSlots['top-info'];
+      if (item.topInfo || slot) {
         return (
-          <div ref="days" role="grid" class={bem('days')}>
-            {this.genMark()}
-            {this.days.map(this.genDay)}
+          <div class={bem('top-info')}>{slot ? slot(item) : item.topInfo}</div>
+        );
+      }
+    },
+
+    genBottomInfo(item) {
+      const slot = this.$scopedSlots['bottom-info'];
+      if (item.bottomInfo || slot) {
+        return (
+          <div class={bem('bottom-info')}>
+            {slot ? slot(item) : item.bottomInfo}
           </div>
         );
       }
-
-      return <div ref="days" />;
     },
 
     genDay(item, index) {
-      const { type, topInfo, bottomInfo } = item;
+      const { type } = item;
       const style = this.getDayStyle(type, index);
       const disabled = type === 'disabled';
 
@@ -257,12 +293,6 @@ export default createComponent({
           this.$emit('click', item);
         }
       };
-
-      const TopInfo = topInfo && <div class={bem('top-info')}>{topInfo}</div>;
-
-      const BottomInfo = bottomInfo && (
-        <div class={bem('bottom-info')}>{bottomInfo}</div>
-      );
 
       if (type === 'selected') {
         return (
@@ -273,10 +303,17 @@ export default createComponent({
             tabindex={-1}
             onClick={onClick}
           >
-            <div class={bem('selected-day')} style={{ background: this.color }}>
-              {TopInfo}
+            <div
+              class={bem('selected-day')}
+              style={{
+                width: this.rowHeightWithUnit,
+                height: this.rowHeightWithUnit,
+                background: this.color,
+              }}
+            >
+              {this.genTopInfo(item)}
               {item.text}
-              {BottomInfo}
+              {this.genBottomInfo(item)}
             </div>
           </div>
         );
@@ -290,9 +327,9 @@ export default createComponent({
           tabindex={disabled ? null : -1}
           onClick={onClick}
         >
-          {TopInfo}
+          {this.genTopInfo(item)}
           {item.text}
-          {BottomInfo}
+          {this.genBottomInfo(item)}
         </div>
       );
     },
@@ -300,7 +337,7 @@ export default createComponent({
 
   render() {
     return (
-      <div class={bem('month')} ref="month" style={this.monthStyle}>
+      <div class={bem('month')} ref="month">
         {this.genTitle()}
         {this.genDays()}
       </div>

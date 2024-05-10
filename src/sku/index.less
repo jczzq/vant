@@ -1,5 +1,6 @@
 @import '../style/var';
 @import '../style/mixins/clearfix';
+@import '../style/mixins/hairline';
 
 .van-sku {
   &-container {
@@ -30,6 +31,7 @@
     margin: 0 @padding-md;
 
     &__img-wrap {
+      flex-shrink: 0;
       width: 96px;
       height: 96px;
       margin: @padding-sm @padding-sm @padding-sm 0;
@@ -65,6 +67,8 @@
   }
 
   &__goods-price {
+    // for price align
+    margin-left: -2px;
     color: @red;
   }
 
@@ -197,6 +201,11 @@
             z-index: 3;
             width: 18px;
             height: 18px;
+            color: #fff;
+            line-height: 18px;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-bottom-left-radius: @border-radius-md;
           }
         }
 
@@ -318,6 +327,9 @@
       .van-cell__title {
         max-width: @field-label-width;
         margin-right: @field-label-margin-right;
+        color: @field-label-color;
+        text-align: left;
+        word-wrap: break-word;
       }
 
       .van-cell__value {
@@ -330,6 +342,26 @@
         font-size: @cell-label-font-size;
         line-height: @cell-label-line-height;
       }
+    }
+
+    &__cell-block {
+      position: relative;
+
+      &::after {
+        .hairline-bottom(@cell-border-color, @padding-md, @padding-md);
+      }
+
+      &:last-child::after {
+        display: none;
+      }
+    }
+
+    &__extra-message {
+      margin-top: -2px;
+      padding: 0 16px 12px;
+      color: @cell-label-color;
+      font-size: @cell-label-font-size;
+      line-height: @cell-label-line-height;
     }
   }
 

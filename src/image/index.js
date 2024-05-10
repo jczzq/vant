@@ -13,6 +13,7 @@ export default createComponent({
     height: [Number, String],
     radius: [Number, String],
     lazyLoad: Boolean,
+    iconPrefix: String,
     showError: {
       type: Boolean,
       default: true,
@@ -23,11 +24,11 @@ export default createComponent({
     },
     errorIcon: {
       type: String,
-      default: 'warning-o',
+      default: 'photo-fail',
     },
     loadingIcon: {
       type: String,
-      default: 'photo-o',
+      default: 'photo',
     },
   },
 
@@ -117,7 +118,11 @@ export default createComponent({
         return (
           <div class={bem('loading')}>
             {this.slots('loading') || (
-              <Icon name={this.loadingIcon} class={bem('loading-icon')} />
+              <Icon
+                name={this.loadingIcon}
+                class={bem('loading-icon')}
+                classPrefix={this.iconPrefix}
+              />
             )}
           </div>
         );
@@ -127,7 +132,11 @@ export default createComponent({
         return (
           <div class={bem('error')}>
             {this.slots('error') || (
-              <Icon name={this.errorIcon} class={bem('error-icon')} />
+              <Icon
+                name={this.errorIcon}
+                class={bem('error-icon')}
+                classPrefix={this.iconPrefix}
+              />
             )}
           </div>
         );

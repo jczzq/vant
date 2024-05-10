@@ -1,7 +1,9 @@
-import { createNamespace, addUnit } from '../utils';
+import { createNamespace, addUnit, noop } from '../utils';
 import { BORDER_TOP, BORDER_LEFT } from '../utils/constant';
 import { PopupMixin } from '../mixins/popup';
 import Button from '../button';
+import GoodsAction from '../goods-action';
+import GoodsActionButton from '../goods-action-button';
 
 const [createComponent, bem, t] = createNamespace('dialog');
 
@@ -10,6 +12,7 @@ export default createComponent({
 
   props: {
     title: String,
+    theme: String,
     width: [Number, String],
     message: String,
     className: null,
@@ -21,6 +24,14 @@ export default createComponent({
     confirmButtonText: String,
     confirmButtonColor: String,
     showCancelButton: Boolean,
+    overlay: {
+      type: Boolean,
+      default: true,
+    },
+    allowHtml: {
+      type: Boolean,
+      default: true,
+    },
     transition: {
       type: String,
       default: 'van-dialog-bounce',
@@ -29,17 +40,13 @@ export default createComponent({
       type: Boolean,
       default: true,
     },
-    overlay: {
+    closeOnPopstate: {
       type: Boolean,
       default: true,
     },
     closeOnClickOverlay: {
       type: Boolean,
       default: false,
-    },
-    allowHtml: {
-      type: Boolean,
-      default: true,
     },
   },
 
@@ -90,17 +97,75 @@ export default createComponent({
 
     onOpened() {
       this.$emit('opened');
+
+      this.$nextTick(() => {
+        this.$refs.dialog?.focus();
+      });
     },
 
     onClosed() {
       this.$emit('closed');
     },
 
+    onKeydown(event) {
+      if (event.key === 'Escape' || event.key === 'Enter') {
+        // skip keyboard events of child elements
+        if (event.target !== this.$refs.dialog) {
+          return;
+        }
+
+        const onEventType = {
+          Enter: this.showConfirmButton
+            ? () => this.handleAction('confirm')
+            : noop,
+          Escape: this.showCancelButton
+            ? () => this.handleAction('cancel')
+            : noop,
+        };
+
+        onEventType[event.key]();
+        this.$emit('keydown', event);
+      }
+    },
+
+    genRoundButtons() {
+      return (
+        <GoodsAction class={bem('footer')}>
+          {this.showCancelButton && (
+            <GoodsActionButton
+              size="large"
+              type="warning"
+              text={this.cancelButtonText || t('cancel')}
+              class={bem('cancel')}
+              color={this.cancelButtonColor}
+              loading={this.loading.cancel}
+              onClick={() => {
+                this.handleAction('cancel');
+              }}
+            />
+          )}
+          {this.showConfirmButton && (
+            <GoodsActionButton
+              size="large"
+              type="danger"
+              text={this.confirmButtonText || t('confirm')}
+              class={bem('confirm')}
+              color={this.confirmButtonColor}
+              loading={this.loading.confirm}
+              onClick={() => {
+                this.handleAction('confirm');
+              }}
+            />
+          )}
+        </GoodsAction>
+      );
+    },
+
     genButtons() {
       const multiple = this.showCancelButton && this.showConfirmButton;
 
       return (
-        <div class={[BORDER_TOP, bem('footer', { buttons: multiple })]}>
+        <div class={[BORDER_TOP, bem('footer')]}>
           {this.showCancelButton && (
             <Button
               size="large"
@@ -108,6 +173,7 @@ export default createComponent({
               loading={this.loading.cancel}
               text={this.cancelButtonText || t('cancel')}
               style={{ color: this.cancelButtonColor }}
+              nativeType="button"
               onClick={() => {
                 this.handleAction('cancel');
               }}
@@ -120,6 +186,7 @@ export default createComponent({
               loading={this.loading.confirm}
               text={this.confirmButtonText || t('confirm')}
               style={{ color: this.confirmButtonColor }}
+              nativeType="button"
               onClick={() => {
                 this.handleAction('confirm');
               }}
@@ -147,7 +214,7 @@ export default createComponent({
         };
 
         return (
-          <div class={bem('content')}>
+          <div class={bem('content', { isolated: !hasTitle })}>
             <div {...data} />
           </div>
         );
@@ -179,12 +246,17 @@ export default createComponent({
           vShow={this.value}
           role="dialog"
           aria-labelledby={this.title || message}
-          class={[bem(), this.className]}
+          class={[bem([this.theme]), this.className]}
           style={{ width: addUnit(this.width) }}
+          ref="dialog"
+          tabIndex={0}
+          onKeydown={this.onKeydown}
         >
           {Title}
           {this.genContent(title, messageSlot)}
-          {this.genButtons()}
+          {this.theme === 'round-button'
+            ? this.genRoundButtons()
+            : this.genButtons()}
         </div>
       </transition>
     );

@@ -61,12 +61,17 @@ test('swipe to switch tab', async () => {
   const onChange = jest.fn();
   const wrapper = mount({
     template: `
-      <van-tabs swipeable @change="onChange">
+      <van-tabs v-model="active" swipeable @change="onChange">
         <van-tab title="title1">Text</van-tab>
         <van-tab title="title2">Text</van-tab>
         <van-tab title="title3" disabled>Text</van-tab>
       </van-tabs>
     `,
+    data() {
+      return {
+        active: 0,
+      };
+    },
     methods: {
       onChange,
     },
@@ -174,7 +179,7 @@ test('name prop', async () => {
 
   const wrapper = mount({
     template: `
-      <van-tabs @click="onClick" @disabled="onDisabled" @change="onChange">
+      <van-tabs v-model="active" @click="onClick" @disabled="onDisabled" @change="onChange">
         <van-tab title="title1" name="a">Text</van-tab>
         <van-tab title="title2" name="b">Text</van-tab>
         <van-tab title="title3" name="c" disabled>Text</van-tab>
@@ -184,6 +189,11 @@ test('name prop', async () => {
       onClick,
       onChange,
       onDisabled,
+    },
+    data() {
+      return {
+        active: 0,
+      };
     },
   });
 
@@ -246,11 +256,11 @@ test('dot prop', () => {
   expect(wrapper).toMatchSnapshot();
 });
 
-test('info prop', () => {
+test('badge prop', () => {
   const wrapper = mount({
     template: `
       <van-tabs>
-        <van-tab info="10">Text</van-tab>
+        <van-tab badge="10">Text</van-tab>
       </van-tabs>
     `,
   });
@@ -258,7 +268,7 @@ test('info prop', () => {
   expect(wrapper).toMatchSnapshot();
 });
 
-test('scrollspy', async () => {
+test('scrollspy prop', async () => {
   const onChange = jest.fn();
   window.scrollTo = jest.fn();
 
@@ -286,6 +296,30 @@ test('scrollspy', async () => {
   mockScrollTop(100);
   expect(wrapper).toMatchSnapshot();
   expect(onChange).toHaveBeenCalledWith('c', 'title3');
+});
+
+test('scrollTo method', async () => {
+  const onChange = jest.fn();
+  window.scrollTo = jest.fn();
+
+  mount({
+    template: `
+      <van-tabs scrollspy sticky @change="onChange" ref="root">
+        <van-tab name="a" title="title1">Text</van-tab>
+        <van-tab name="b" title="title2">Text</van-tab>
+        <van-tab name="c" title="title3">Text</van-tab>
+      </van-tabs>
+    `,
+    methods: {
+      onChange,
+    },
+    mounted() {
+      this.$refs.root.scrollTo('b');
+    },
+  });
+
+  await later();
+  expect(onChange).toHaveBeenCalledWith('b', 'title2');
 });
 
 test('rendered event', async () => {
@@ -337,4 +371,65 @@ test('should not trigger rendered event when disable lazy-render', async () => {
 
   await later();
   expect(onRendered).toHaveBeenCalledTimes(0);
+});
+
+test('before-change prop', async () => {
+  const onChange = jest.fn();
+  const wrapper = mount({
+    template: `
+      <van-tabs @change="onChange" :before-change="beforeChange">
+        <van-tab title="title1">Text</van-tab>
+        <van-tab title="title2">Text</van-tab>
+        <van-tab title="title3">Text</van-tab>
+        <van-tab title="title4">Text</van-tab>
+        <van-tab title="title5">Text</van-tab>
+      </van-tabs>
+    `,
+    methods: {
+      onChange,
+      beforeChange(name) {
+        switch (name) {
+          case 1:
+            return false;
+          case 2:
+            return true;
+          case 3:
+            return Promise.resolve(false);
+          case 4:
+            return Promise.resolve(true);
+        }
+      },
+    },
+  });
+
+  await later();
+
+  const tabs = wrapper.findAll('.van-tab');
+  tabs.at(1).trigger('click');
+  expect(onChange).toHaveBeenCalledTimes(0);
+
+  tabs.at(2).trigger('click');
+  expect(onChange).toHaveBeenCalledTimes(1);
+  expect(onChange).toHaveBeenLastCalledWith(2, 'title3');
+
+  tabs.at(3).trigger('click');
+  expect(onChange).toHaveBeenCalledTimes(1);
+
+  tabs.at(4).trigger('click');
+  await later();
+  expect(onChange).toHaveBeenCalledTimes(2);
+  expect(onChange).toHaveBeenLastCalledWith(4, 'title5');
+});
+
+test('render empty tab', async () => {
+  const wrapper = mount({
+    template: `
+      <van-tabs>
+        <van-tab title="title1" />
+        <van-tab title="title2" />
+      </van-tabs>
+    `,
+  });
+
+  expect(wrapper).toMatchSnapshot();
 });

@@ -1,4 +1,4 @@
-import merge from 'webpack-merge';
+import { merge } from 'webpack-merge';
 import { join } from 'path';
 import { baseConfig } from './webpack.base';
 import { WebpackConfig } from '../common/types';
@@ -10,9 +10,8 @@ export function getPackageConfig(isMinify: boolean): WebpackConfig {
 
   setBuildTarget('package');
 
-  return merge(
-    baseConfig as any,
-    {
+  return getWebpackConfig(
+    merge(baseConfig as any, {
       mode: 'production',
       entry: {
         [name]: join(ES_DIR, 'index.js'),
@@ -25,7 +24,7 @@ export function getPackageConfig(isMinify: boolean): WebpackConfig {
         filename: isMinify ? '[name].min.js' : '[name].js',
         umdNamedDefine: true,
         // https://github.com/webpack/webpack/issues/6522
-        globalObject: "typeof self !== 'undefined' ? self : this",
+        globalObject: "(typeof self !== 'undefined' ? self : this)",
       },
       externals: {
         vue: {
@@ -39,7 +38,6 @@ export function getPackageConfig(isMinify: boolean): WebpackConfig {
       optimization: {
         minimize: isMinify,
       },
-    },
-    getWebpackConfig()
+    })
   );
 }

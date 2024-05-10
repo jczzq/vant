@@ -77,6 +77,7 @@ test('raf', async () => {
 
 test('isEmail', () => {
   expect(isEmail('abc@gmail.com')).toBeTruthy();
+  expect(isEmail(' abc@gmail.com ')).toBeTruthy();
   expect(isEmail('abc@@gmail.com')).toBeFalsy();
   expect(isEmail('@gmail.com')).toBeFalsy();
   expect(isEmail('abc@')).toBeFalsy();
@@ -99,22 +100,27 @@ test('isNumeric', () => {
 });
 
 test('formatNumber', () => {
-  expect(formatNumber('abc')).toEqual('');
-  expect(formatNumber('1.2')).toEqual('1');
-  expect(formatNumber('abc1.2')).toEqual('1');
-  expect(formatNumber('123.4.')).toEqual('123');
-
   // with dot
-  expect(formatNumber('abc', true)).toEqual('');
-  expect(formatNumber('1.2', true)).toEqual('1.2');
-  expect(formatNumber('abc1.2', true)).toEqual('1.2');
-  expect(formatNumber('123.4.', true)).toEqual('123.4');
+  expect(formatNumber('abc')).toEqual('');
+  expect(formatNumber('1.2')).toEqual('1.2');
+  expect(formatNumber('abc1.2')).toEqual('1.2');
+  expect(formatNumber('123.4.')).toEqual('123.4');
+
+  // without dot
+  expect(formatNumber('1.2', false)).toEqual('1');
+  expect(formatNumber('abc1.2', false)).toEqual('1');
+  expect(formatNumber('123.4.', false)).toEqual('123');
 
   // minus
-  expect(formatNumber('-1.2')).toEqual('-1');
+  expect(formatNumber('-1.2', false)).toEqual('-1');
+  expect(formatNumber('-1.2', false, false)).toEqual('1');
   expect(formatNumber('-1.2', true)).toEqual('-1.2');
   expect(formatNumber('-1.2-', true)).toEqual('-1.2');
   expect(formatNumber('123-')).toEqual('123');
+
+  // special cases
+  expect(formatNumber('.1', true)).toEqual('0.1');
+  expect(formatNumber('-.1')).toEqual('-0.1');
 });
 
 test('addUnit', () => {
@@ -130,6 +136,8 @@ test('addUnit', () => {
 test('unitToPx', () => {
   const originGetComputedStyle = window.getComputedStyle;
 
+  window.innerWidth = 100;
+  window.innerHeight = 200;
   window.getComputedStyle = () => ({ fontSize: '16px' });
 
   expect(unitToPx(0)).toEqual(0);
@@ -137,6 +145,8 @@ test('unitToPx', () => {
   expect(unitToPx('10px')).toEqual(10);
   expect(unitToPx('0rem')).toEqual(0);
   expect(unitToPx('10rem')).toEqual(160);
+  expect(unitToPx('10vw')).toEqual(10);
+  expect(unitToPx('10vh')).toEqual(20);
 
   window.getComputedStyle = originGetComputedStyle;
 });

@@ -32,9 +32,9 @@ function triggerZoom(el, x, y, direction = 'in') {
 }
 
 const images = [
-  'https://img.yzcdn.cn/1.png',
-  'https://img.yzcdn.cn/2.png',
-  'https://img.yzcdn.cn/3.png',
+  'https://img01.yzcdn.cn/1.png',
+  'https://img01.yzcdn.cn/2.png',
+  'https://img01.yzcdn.cn/3.png',
 ];
 
 test('render image', async () => {
@@ -177,7 +177,7 @@ test('onClose option', () => {
   expect(onClose).toHaveBeenCalledTimes(1);
   expect(onClose).toHaveBeenCalledWith({
     index: 0,
-    url: 'https://img.yzcdn.cn/1.png',
+    url: 'https://img01.yzcdn.cn/1.png',
   });
 });
 
@@ -219,12 +219,7 @@ test('register component', () => {
 });
 
 test('zoom in and drag image to move', async () => {
-  const restore = mockGetBoundingClientRect({ width: 100 });
-  const originWindowWidth = window.innerWidth;
-  const originWindowHeight = window.innerHeight;
-
-  window.innerWidth = 100;
-  window.innerHeight = 100;
+  const restore = mockGetBoundingClientRect({ width: 100, height: 100 });
 
   const wrapper = mount(ImagePreviewVue, {
     propsData: { images, value: true },
@@ -248,8 +243,6 @@ test('zoom in and drag image to move', async () => {
   triggerDrag(image, 300, 300);
   expect(wrapper.find('.van-image')).toMatchSnapshot();
 
-  window.innerWidth = originWindowWidth;
-  window.innerHeight = originWindowHeight;
   restore();
 });
 

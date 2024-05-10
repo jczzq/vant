@@ -1,7 +1,6 @@
 // Utils
 import { createNamespace } from '../utils';
 import { inherit, emit } from '../utils/functional';
-import { BORDER_SURROUND } from '../utils/constant';
 
 // Components
 import Icon from '../icon';
@@ -33,13 +32,17 @@ function Tag(
   slots: DefaultSlots,
   ctx: RenderContext<TagProps>
 ) {
-  const { type, mark, plain, color, round, size } = props;
+  const { type, mark, plain, color, round, size, textColor } = props;
 
   const key = plain ? 'color' : 'backgroundColor';
   const style = { [key]: color };
 
-  if (props.textColor) {
-    style.color = props.textColor;
+  if (plain) {
+    style.color = textColor || color;
+    style.borderColor = color;
+  } else {
+    style.color = textColor;
+    style.background = color;
   }
 
   const classes: { [key: string]: any } = { mark, plain, round };
@@ -63,7 +66,7 @@ function Tag(
       <span
         key="content"
         style={style}
-        class={[bem([classes, type]), { [BORDER_SURROUND]: plain }]}
+        class={bem([classes, type])}
         {...inherit(ctx, true)}
       >
         {slots.default?.()}

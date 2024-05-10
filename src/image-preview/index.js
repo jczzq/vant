@@ -6,23 +6,25 @@ let instance;
 
 const defaultConfig = {
   loop: true,
-  images: [],
   value: true,
-  minZoom: 1 / 3,
+  images: [],
   maxZoom: 3,
-  className: '',
+  minZoom: 1 / 3,
   onClose: null,
   onChange: null,
+  className: '',
   showIndex: true,
   closeable: false,
   closeIcon: 'clear',
   asyncClose: false,
-  startPosition: 0,
-  swipeDuration: 500,
-  showIndicators: false,
-  closeOnPopstate: false,
-  closeIconPosition: 'top-right',
+  transition: 'van-fade',
   getContainer: 'body',
+  overlayStyle: null,
+  startPosition: 0,
+  swipeDuration: 300,
+  showIndicators: false,
+  closeOnPopstate: true,
+  closeIconPosition: 'top-right',
 };
 
 const initInstance = () => {

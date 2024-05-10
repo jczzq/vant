@@ -33,7 +33,7 @@ export default {
     return {
       minDate: new Date(2020, 0, 1),
       maxDate: new Date(2025, 10, 1),
-      currentDate: new Date(),
+      currentDate: new Date(2021, 0, 17),
     };
   },
 };
@@ -208,6 +208,42 @@ export default {
 };
 ```
 
+### Columns Order
+
+```html
+<van-datetime-picker
+  v-model="currentDate"
+  type="date"
+  title="Columns Order"
+  :columns-order="['month', 'day', 'year']"
+  :formatter="formatter"
+/>
+```
+
+```js
+export default {
+  data() {
+    return {
+      currentDate: new Date(),
+    };
+  },
+  methods: {
+    formatter(type, val) {
+      if (type === 'year') {
+        return val + ' Year';
+      }
+      if (type === 'month') {
+        return val + ' Month';
+      }
+      if (type === 'day') {
+        return val + ' Day';
+      }
+      return val;
+    },
+  },
+};
+```
+
 ## API
 
 ### Props
@@ -220,11 +256,13 @@ export default {
 | cancel-button-text | Text of cancel button | _string_ | `Cancel` |
 | show-toolbar | Whether to show toolbar | _boolean_ | `true` |
 | loading | Whether to show loading prompt | _boolean_ | `false` |
+| readonly `v2.10.5` | Whether to be readonly | _boolean_ | `false` |
 | filter | Option filter | _(type, vals) => vals_ | - |
 | formatter | Option text formatter | _(type, val) => val_ | - |
-| item-height `v2.8.6` | Option height, supports `px` ans `rem` unit, default `px` | _number \| string_ | `44` |
-| visible-item-count | Count of visible columns | _number \| string_ | `5` |
-| swipe-duration `v2.2.13` | Duration of the momentum animation，unit `ms` | _number \| string_ | `1000` |
+| columns-order `v2.9.2` | Array for ordering columns, where item can be set to<br> `year`, `month`, `day`, `hour` and `minute` | _string[]_ | - |
+| item-height `v2.8.6` | Option height, supports `px` `vw` `vh` `rem` unit, default `px` | _number \| string_ | `44` |
+| visible-item-count | Count of visible columns | _number \| string_ | `6` |
+| swipe-duration | Duration of the momentum animation，unit `ms` | _number \| string_ | `1000` |
 
 ### DatePicker Props
 
@@ -248,15 +286,27 @@ Following props are supported when the type is time
 
 ### Events
 
-| Event   | Description                         | Arguments               |
-| ------- | ----------------------------------- | ----------------------- |
-| change  | Triggered when value changed        | picker: Picker instance |
-| confirm | Triggered when click confirm button | value: current value    |
-| cancel  | Triggered when click cancel button  | -                       |
+| Event | Description | Arguments |
+| --- | --- | --- |
+| change | Emitted when value changed | picker: Picker instance |
+| confirm | Emitted when the confirm button is clicked | value: current value |
+| cancel | Emitted when the cancel button is clicked | - |
+
+### Slots
+
+| Name | Description | SlotProps |
+| --- | --- | --- |
+| default `v2.11.1` | Custom toolbar content | - |
+| title `v2.11.1` | Custom title | - |
+| confirm `v2.11.1` | Custom confirm button text | - |
+| cancel `v2.11.1` | Custom cancel button text | - |
+| option `v2.11.1` | Custom option content | _option: string \| object_ |
+| columns-top `v2.11.1` | Custom content above columns | - |
+| columns-bottom `v2.11.1` | Custom content below columns | - |
 
 ### Methods
 
-Use [ref](https://vuejs.org/v2/api/#ref) to get DatetimePicker instance and call instance methods
+Use [ref](https://vuejs.org/v2/api/#ref) to get DatetimePicker instance and call instance methods.
 
 | Name               | Description         | Attribute | Return value |
 | ------------------ | ------------------- | --------- | ------------ |

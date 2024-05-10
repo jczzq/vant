@@ -18,6 +18,7 @@ export default createComponent({
     ParentMixin('vanSwipe'),
     BindEventMixin(function (bind, isBind) {
       bind(window, 'resize', this.resize, true);
+      bind(window, 'orientationchange', this.resize, true);
       bind(window, 'visibilitychange', this.onVisibilityChange);
 
       if (isBind) {
@@ -123,15 +124,19 @@ export default createComponent({
     },
 
     trackStyle() {
-      const mainAxis = this.vertical ? 'height' : 'width';
-      const crossAxis = this.vertical ? 'width' : 'height';
-
-      return {
-        [mainAxis]: `${this.trackSize}px`,
-        [crossAxis]: this[crossAxis] ? `${this[crossAxis]}px` : '',
+      const style = {
         transitionDuration: `${this.swiping ? 0 : this.duration}ms`,
         transform: `translate${this.vertical ? 'Y' : 'X'}(${this.offset}px)`,
       };
+
+      if (this.size) {
+        const mainAxis = this.vertical ? 'height' : 'width';
+        const crossAxis = this.vertical ? 'width' : 'height';
+        style[mainAxis] = `${this.trackSize}px`;
+        style[crossAxis] = this[crossAxis] ? `${this[crossAxis]}px` : '';
+      }
+
+      return style;
     },
 
     indicatorStyle() {
@@ -161,13 +166,16 @@ export default createComponent({
 
       clearTimeout(this.timer);
 
-      const rect = this.$el.getBoundingClientRect();
+      const rect = {
+        width: this.$el.offsetWidth,
+        height: this.$el.offsetHeight,
+      };
 
       this.rect = rect;
       this.swiping = true;
       this.active = active;
-      this.computedWidth = Math.round(+this.width || rect.width);
-      this.computedHeight = Math.round(+this.height || rect.height);
+      this.computedWidth = +this.width || rect.width;
+      this.computedHeight = +this.height || rect.height;
       this.offset = this.getTargetOffset(active);
       this.children.forEach((swipe) => {
         swipe.offset = 0;
@@ -259,7 +267,7 @@ export default createComponent({
         currentPosition = Math.min(currentPosition, -this.minOffset);
       }
 
-      let targetOffset = Math.round(offset - currentPosition);
+      let targetOffset = offset - currentPosition;
       if (!this.loop) {
         targetOffset = range(targetOffset, this.minOffset, 0);
       }

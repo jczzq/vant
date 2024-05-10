@@ -1,4 +1,5 @@
 // Utils
+import { raf } from '../utils/dom/raf';
 import { isDate } from '../utils/validate/date';
 import { getScrollTop } from '../utils/dom/scroll';
 import {
@@ -8,7 +9,6 @@ import {
   copyDates,
   getNextDay,
   compareDay,
-  ROW_HEIGHT,
   calcDateNum,
   compareMonth,
   createComponent,
@@ -27,46 +27,34 @@ export default createComponent({
     title: String,
     color: String,
     value: Boolean,
+    readonly: Boolean,
     formatter: Function,
+    rowHeight: [Number, String],
     confirmText: String,
     rangePrompt: String,
     defaultDate: [Date, Array],
     getContainer: [String, Function],
     allowSameDay: Boolean,
-    closeOnPopstate: Boolean,
     confirmDisabledText: String,
     type: {
       type: String,
       default: 'single',
     },
-    minDate: {
-      type: Date,
-      validator: isDate,
-      default: () => new Date(),
-    },
-    maxDate: {
-      type: Date,
-      validator: isDate,
-      default() {
-        const now = new Date();
-        return new Date(now.getFullYear(), now.getMonth() + 6, now.getDate());
-      },
+    round: {
+      type: Boolean,
+      default: true,
     },
     position: {
       type: String,
       default: 'bottom',
     },
-    rowHeight: {
-      type: [Number, String],
-      default: ROW_HEIGHT,
-    },
-    round: {
-      type: Boolean,
-      default: true,
-    },
     poppable: {
       type: Boolean,
       default: true,
+    },
+    maxRange: {
+      type: [Number, String],
+      default: null,
     },
     lazyRender: {
       type: Boolean,
@@ -88,7 +76,7 @@ export default createComponent({
       type: Boolean,
       default: true,
     },
-    safeAreaInsetBottom: {
+    closeOnPopstate: {
       type: Boolean,
       default: true,
     },
@@ -96,8 +84,32 @@ export default createComponent({
       type: Boolean,
       default: true,
     },
-    maxRange: {
+    safeAreaInsetBottom: {
+      type: Boolean,
+      default: true,
+    },
+    minDate: {
+      type: Date,
+      validator: isDate,
+      default: () => new Date(),
+    },
+    maxDate: {
+      type: Date,
+      validator: isDate,
+      default() {
+        const now = new Date();
+        return new Date(now.getFullYear(), now.getMonth() + 6, now.getDate());
+      },
+    },
+    firstDayOfWeek: {
       type: [Number, String],
+      default: 0,
+      validator: (val) => val >= 0 && val <= 6,
+    },
+  },
+
+  inject: {
+    vanPopup: {
       default: null,
     },
   },
@@ -127,21 +139,29 @@ export default createComponent({
     buttonDisabled() {
       const { type, currentDate } = this;
 
-      if (type === 'range') {
-        return !currentDate[0] || !currentDate[1];
-      }
-
-      if (type === 'multiple') {
-        return !currentDate.length;
+      if (currentDate) {
+        if (type === 'range') {
+          return !currentDate[0] || !currentDate[1];
+        }
+        if (type === 'multiple') {
+          return !currentDate.length;
+        }
       }
 
       return !currentDate;
     },
+
+    dayOffset() {
+      return this.firstDayOfWeek ? this.firstDayOfWeek % 7 : 0;
+    },
   },
 
   watch: {
-    type: 'reset',
     value: 'init',
+
+    type() {
+      this.reset();
+    },
 
     defaultDate(val) {
       this.currentDate = val;
@@ -151,6 +171,10 @@ export default createComponent({
 
   mounted() {
     this.init();
+    // https://github.com/vant-ui/vant/issues/9845
+    if (!this.poppable) {
+      this.vanPopup?.$on('opened', this.onScroll);
+    }
   },
 
   /* istanbul ignore next */
@@ -160,8 +184,8 @@ export default createComponent({
 
   methods: {
     // @exposed-api
-    reset() {
-      this.currentDate = this.getInitialDate();
+    reset(date = this.getInitialDate()) {
+      this.currentDate = date;
       this.scrollIntoView();
     },
 
@@ -172,21 +196,18 @@ export default createComponent({
 
       this.$nextTick(() => {
         // add Math.floor to avoid decimal height issues
-        // https://github.com/youzan/vant/issues/5640
+        // https://github.com/vant-ui/vant/issues/5640
         this.bodyHeight = Math.floor(
           this.$refs.body.getBoundingClientRect().height
         );
         this.onScroll();
+        this.scrollIntoView();
       });
-      this.scrollIntoView();
     },
 
-    // scroll to current month
-    scrollIntoView() {
-      this.$nextTick(() => {
-        const { currentDate } = this;
-        const targetDate =
-          this.type === 'single' ? currentDate : currentDate[0];
+    // @exposed-api
+    scrollToDate(targetDate) {
+      raf(() => {
         const displayed = this.value || !this.poppable;
 
         /* istanbul ignore if */
@@ -196,17 +217,35 @@ export default createComponent({
 
         this.months.some((month, index) => {
           if (compareMonth(month, targetDate) === 0) {
-            this.$refs.months[index].scrollIntoView();
+            const { body, months } = this.$refs;
+            months[index].scrollIntoView(body);
             return true;
           }
 
           return false;
         });
+
+        this.onScroll();
       });
+    },
+
+    // scroll to current month
+    scrollIntoView() {
+      const { currentDate } = this;
+
+      if (currentDate) {
+        const targetDate =
+          this.type === 'single' ? currentDate : currentDate[0];
+        this.scrollToDate(targetDate);
+      }
     },
 
     getInitialDate() {
       const { type, minDate, maxDate, defaultDate } = this;
+
+      if (defaultDate === null) {
+        return defaultDate;
+      }
 
       let defaultVal = new Date();
 
@@ -238,31 +277,41 @@ export default createComponent({
       const heightSum = heights.reduce((a, b) => a + b, 0);
 
       // iOS scroll bounce may exceed the range
-      /* istanbul ignore next */
-      if (top < 0 || (bottom > heightSum && top > 0)) {
+      if (bottom > heightSum && top > 0) {
         return;
       }
 
       let height = 0;
       let currentMonth;
+      const visibleRange = [-1, -1];
 
       for (let i = 0; i < months.length; i++) {
         const visible = height <= bottom && height + heights[i] >= top;
 
-        if (visible && !currentMonth) {
-          currentMonth = months[i];
+        if (visible) {
+          visibleRange[1] = i;
+
+          if (!currentMonth) {
+            currentMonth = months[i];
+            visibleRange[0] = i;
+          }
+
+          if (!months[i].showed) {
+            months[i].showed = true;
+            this.$emit('month-show', {
+              date: months[i].date,
+              title: months[i].title,
+            });
+          }
         }
 
-        if (!months[i].visible && visible) {
-          this.$emit('month-show', {
-            date: months[i].date,
-            title: months[i].title,
-          });
-        }
-
-        months[i].visible = visible;
         height += heights[i];
       }
+
+      months.forEach((month, index) => {
+        month.visible =
+          index >= visibleRange[0] - 1 && index <= visibleRange[1] + 1;
+      });
 
       /* istanbul ignore else */
       if (currentMonth) {
@@ -271,10 +320,19 @@ export default createComponent({
     },
 
     onClickDay(item) {
+      if (this.readonly) {
+        return;
+      }
+
       const { date } = item;
       const { type, currentDate } = this;
 
       if (type === 'range') {
+        if (!currentDate) {
+          this.select([date, null]);
+          return;
+        }
+
         const [startDay, endDay] = currentDate;
 
         if (startDay && !endDay) {
@@ -291,8 +349,12 @@ export default createComponent({
           this.select([date, null]);
         }
       } else if (type === 'multiple') {
-        let selectedIndex;
+        if (!currentDate) {
+          this.select([date]);
+          return;
+        }
 
+        let selectedIndex;
         const selected = this.currentDate.some((dateItem, index) => {
           const equal = compareDay(dateItem, date) === 0;
           if (equal) {
@@ -379,6 +441,11 @@ export default createComponent({
           showSubtitle={this.showSubtitle}
           allowSameDay={this.allowSameDay}
           showMonthTitle={showMonthTitle}
+          firstDayOfWeek={this.dayOffset}
+          scopedSlots={{
+            'top-info': this.$scopedSlots['top-info'],
+            'bottom-info': this.$scopedSlots['bottom-info'],
+          }}
           onClick={this.onClickDay}
         />
       );
@@ -432,6 +499,7 @@ export default createComponent({
             scopedSlots={{
               title: () => this.slots('title'),
             }}
+            firstDayOfWeek={this.dayOffset}
           />
           <div ref="body" class={bem('body')} onScroll={this.onScroll}>
             {this.months.map(this.genMonth)}

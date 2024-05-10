@@ -1,4 +1,4 @@
-import merge from 'webpack-merge';
+import { merge } from 'webpack-merge';
 import { get } from 'lodash';
 import { WebpackConfig } from '../common/types';
 import { getVantConfig, getWebpackConfig } from '../common';
@@ -10,9 +10,8 @@ const outputDir = get(vantConfig, 'build.site.outputDir', SITE_DIST_DIR);
 const publicPath = get(vantConfig, 'build.site.publicPath', '/');
 
 export function getSitePrdConfig(): WebpackConfig {
-  return merge(
-    getSiteDevBaseConfig(),
-    {
+  return getWebpackConfig(
+    merge(getSiteDevBaseConfig(), {
       mode: 'production',
       stats: 'none',
       performance: {
@@ -25,7 +24,6 @@ export function getSitePrdConfig(): WebpackConfig {
         filename: '[name].[hash:8].js',
         chunkFilename: 'async_[name].[chunkhash:8].js',
       },
-    },
-    getWebpackConfig()
+    })
   );
 }

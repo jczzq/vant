@@ -1,7 +1,7 @@
 import { createNamespace, isDef, addUnit } from '../utils';
 import { resetScroll } from '../utils/dom/reset-scroll';
 import { preventDefault } from '../utils/dom/event';
-import { formatNumber } from '../utils/format/number';
+import { addNumber, formatNumber } from '../utils/format/number';
 import { isNaN } from '../utils/validate/number';
 import { FieldMixin } from '../mixins/field';
 
@@ -12,12 +12,6 @@ const LONG_PRESS_INTERVAL = 200;
 
 function equal(value1, value2) {
   return String(value1) === String(value2);
-}
-
-// add num and avoid float number
-function add(num1, num2) {
-  const cardinal = 10 ** 10;
-  return Math.round((num1 + num2) * cardinal) / cardinal;
 }
 
 export default createComponent({
@@ -65,6 +59,10 @@ export default createComponent({
       type: Boolean,
       default: true,
     },
+    showInput: {
+      type: Boolean,
+      default: true,
+    },
     longPress: {
       type: Boolean,
       default: true,
@@ -72,7 +70,7 @@ export default createComponent({
   },
 
   data() {
-    const defaultValue = isDef(this.value) ? this.value : this.defaultValue;
+    const defaultValue = this.value ?? this.defaultValue;
     const value = this.format(defaultValue);
 
     if (!equal(value, this.value)) {
@@ -189,6 +187,11 @@ export default createComponent({
         event.target.value = formatted;
       }
 
+      // prefer number type
+      if (formatted === String(+formatted)) {
+        formatted = +formatted;
+      }
+
       this.emitChange(formatted);
     },
 
@@ -211,14 +214,14 @@ export default createComponent({
 
       const diff = type === 'minus' ? -this.step : +this.step;
 
-      const value = this.format(add(+this.currentValue, diff));
+      const value = this.format(addNumber(+this.currentValue, diff));
 
       this.emitChange(value);
       this.$emit(type);
     },
 
     onFocus(event) {
-      // readonly not work in lagacy mobile safari
+      // readonly not work in legacy mobile safari
       if (this.disableInput && this.$refs.input) {
         this.$refs.input.blur();
       } else {
@@ -229,7 +232,7 @@ export default createComponent({
     onBlur(event) {
       const value = this.format(event.target.value);
       event.target.value = value;
-      this.currentValue = value;
+      this.emitChange(value);
       this.$emit('blur', event);
 
       resetScroll();
@@ -268,12 +271,22 @@ export default createComponent({
         preventDefault(event);
       }
     },
+
+    onMousedown(event) {
+      // fix mobile safari page scroll down issue
+      // see: https://github.com/vant-ui/vant/issues/7690
+      if (this.disableInput) {
+        event.preventDefault();
+      }
+    },
   },
 
   render() {
     const createListeners = (type) => ({
       on: {
-        click: () => {
+        click: (e) => {
+          // disable double tap scrolling on mobile safari
+          e.preventDefault();
           this.type = type;
           this.onChange();
         },
@@ -296,6 +309,7 @@ export default createComponent({
           {...createListeners('minus')}
         />
         <input
+          vShow={this.showInput}
           ref="input"
           type={this.integer ? 'tel' : 'text'}
           role="spinbutton"
@@ -304,7 +318,7 @@ export default createComponent({
           style={this.inputStyle}
           disabled={this.disabled}
           readonly={this.disableInput}
-          // set keyboard in mordern browers
+          // set keyboard in modern browsers
           inputmode={this.integer ? 'numeric' : 'decimal'}
           placeholder={this.placeholder}
           aria-valuemax={this.max}
@@ -313,6 +327,7 @@ export default createComponent({
           onInput={this.onInput}
           onFocus={this.onFocus}
           onBlur={this.onBlur}
+          onMousedown={this.onMousedown}
         />
         <button
           vShow={this.showPlus}

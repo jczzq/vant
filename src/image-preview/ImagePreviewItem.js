@@ -27,8 +27,8 @@ export default {
     active: Number,
     minZoom: [Number, String],
     maxZoom: [Number, String],
-    windowWidth: Number,
-    windowHeight: Number,
+    rootWidth: Number,
+    rootHeight: Number,
   },
 
   data() {
@@ -46,9 +46,9 @@ export default {
 
   computed: {
     vertical() {
-      const { windowWidth, windowHeight } = this;
-      const windowRatio = windowHeight / windowWidth;
-      return this.imageRatio > windowRatio;
+      const { rootWidth, rootHeight } = this;
+      const rootRatio = rootHeight / rootWidth;
+      return this.imageRatio > rootRatio;
     },
 
     imageStyle() {
@@ -69,10 +69,10 @@ export default {
     maxMoveX() {
       if (this.imageRatio) {
         const displayWidth = this.vertical
-          ? this.windowHeight / this.imageRatio
-          : this.windowWidth;
+          ? this.rootHeight / this.imageRatio
+          : this.rootWidth;
 
-        return Math.max(0, (this.scale * displayWidth - this.windowWidth) / 2);
+        return Math.max(0, (this.scale * displayWidth - this.rootWidth) / 2);
       }
 
       return 0;
@@ -81,13 +81,10 @@ export default {
     maxMoveY() {
       if (this.imageRatio) {
         const displayHeight = this.vertical
-          ? this.windowHeight
-          : this.windowWidth * this.imageRatio;
+          ? this.rootHeight
+          : this.rootWidth * this.imageRatio;
 
-        return Math.max(
-          0,
-          (this.scale * displayHeight - this.windowHeight) / 2
-        );
+        return Math.max(0, (this.scale * displayHeight - this.rootHeight) / 2);
       }
 
       return 0;
@@ -95,6 +92,8 @@ export default {
   },
 
   watch: {
+    active: 'resetScale',
+
     show(val) {
       if (!val) {
         this.resetScale();
@@ -114,11 +113,15 @@ export default {
     },
 
     setScale(scale) {
-      this.scale = range(scale, +this.minZoom, +this.maxZoom);
-      this.$emit('scale', {
-        scale: this.scale,
-        index: this.active,
-      });
+      scale = range(scale, +this.minZoom, +this.maxZoom);
+
+      if (scale !== this.scale) {
+        this.scale = scale;
+        this.$emit('scale', {
+          scale: this.scale,
+          index: this.active,
+        });
+      }
     },
 
     toggleScale() {
@@ -136,11 +139,12 @@ export default {
       this.touchStart(event);
       this.touchStartTime = new Date();
 
+      this.fingerNum = touches.length;
       this.startMoveX = this.moveX;
       this.startMoveY = this.moveY;
 
-      this.moving = touches.length === 1 && this.scale !== 1;
-      this.zooming = touches.length === 2 && !offsetX;
+      this.moving = this.fingerNum === 1 && this.scale !== 1;
+      this.zooming = this.fingerNum === 2 && !offsetX;
 
       if (this.zooming) {
         this.startScale = this.scale;
@@ -213,10 +217,14 @@ export default {
     },
 
     checkTap() {
+      if (this.fingerNum > 1) {
+        return;
+      }
+
       const { offsetX = 0, offsetY = 0 } = this;
       const deltaTime = new Date() - this.touchStartTime;
       const TAP_TIME = 250;
-      const TAP_OFFSET = 10;
+      const TAP_OFFSET = 5;
 
       if (
         offsetX < TAP_OFFSET &&
