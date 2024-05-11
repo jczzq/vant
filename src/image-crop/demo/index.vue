@@ -9,7 +9,7 @@
         v-model="image2"
         :aspect-ratio="80 / 55"
         @rotate="onRotate"
-        style="height: 68.75vw;"
+        style="height: 68.75vw"
       />
     </demo-block>
 
@@ -25,7 +25,7 @@
           </div>
         </div>
         <div class="item" @click="addImg">
-          <div class="item-box add">添加图片</div>
+          <div class="item-box add">{{ t('addOne') }}</div>
         </div>
       </van-row>
     </demo-block>
@@ -40,20 +40,14 @@
             height: 100%;
           "
         >
-          点击选择要裁剪的图片
+          {{ t('selectImage') }}
         </div>
         <template v-slot:delete>
-          <span>移除</span>
+          <span>{{ t('delete') }}</span>
         </template>
-        <template v-slot:cancel>
-          cancel
-        </template>
-        <template v-slot:rotate>
-          rotate
-        </template>
-        <template v-slot:submit>
-          submit
-        </template>
+        <template v-slot:cancel> cancel </template>
+        <template v-slot:rotate> rotate </template>
+        <template v-slot:submit> submit </template>
       </van-image-crop>
     </demo-block>
   </demo-section>
@@ -66,11 +60,15 @@ export default {
       proportion: '调整比例',
       slotUsage: '使用Slot',
       listUsage: '列表',
+      addOne: '添加图片',
+      selectImage: '点击选择要裁剪的图片',
     },
     'en-US': {
       proportion: 'Proportion',
       slotUsage: 'Use Slot',
       listUsage: 'List',
+      addOne: 'Add One',
+      selectImage: 'Select Image',
     },
   },
 

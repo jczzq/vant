@@ -62,7 +62,7 @@ Removes an item from the list by listening for the `delete` event
     </div>
   </div>
   <div class="item" @click="addImg">
-    <div class="item-box add">Add A Image</div>
+    <div class="item-box add">Add One</div>
   </div>
 </van-row>
 ```
@@ -132,20 +132,14 @@ methods: {
   <div
     style="height: 100%; display: flex; justify-content: center; align-items: center"
   >
-    点击选择要裁剪的图片
+    Select Image
   </div>
   <template v-slot:delete>
-    <span>移除</span>
+    <span>Delete</span>
   </template>
-  <template v-slot:cancel>
-    cancel
-  </template>
-  <template v-slot:rotate>
-    rotate
-  </template>
-  <template v-slot:submit>
-    submit
-  </template>
+  <template v-slot:cancel> cancel </template>
+  <template v-slot:rotate> rotate </template>
+  <template v-slot:submit> submit </template>
 </van-image-crop>
 ```
 
