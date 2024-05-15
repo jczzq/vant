@@ -43,6 +43,7 @@
     "@types/lodash": "^4.17.1",
     "@types/markdown-it": "^13.0.8",
     "rimraf": "^5.0.5",
+    "vant": "workspace:^",
     "vue": "^3.4.27"
   },
   "dependencies": {

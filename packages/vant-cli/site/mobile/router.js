@@ -22,7 +22,26 @@ function getLangFromRoute(route) {
 }
 
 function getRoutes() {
-  const routes = [];
+  const routes = [
+    {
+      path: '/pro',
+      redirect: '/pro/home',
+      component: () => import('./views/pro/index.vue'),
+      children: [
+        {
+          path: 'home',
+          component: () => import('./views/pro/home.vue'),
+          meta: { level: 1 },
+        },
+        {
+          path: 'color/:color',
+          component: () => import('./views/pro/color.vue'),
+          props: true,
+          meta: { level: 2 },
+        },
+      ],
+    },
+  ];
   const names = Object.keys(demos);
   const langs = locales ? Object.keys(locales) : [];
 
@@ -91,7 +110,7 @@ function getRoutes() {
 
 export const router = createRouter({
   history: createWebHashHistory(),
-  routes: getRoutes(),
+  routes: [...getRoutes()],
   scrollBehavior: (to, from, savedPosition) => savedPosition || { x: 0, y: 0 },
 });
 

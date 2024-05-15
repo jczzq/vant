@@ -45,7 +45,7 @@ export default {
     },
 
     smallTitle() {
-      return this.config.title.length >= 8;
+      return this.config?.title?.length >= 8;
     },
   },
 };

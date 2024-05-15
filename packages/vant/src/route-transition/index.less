@@ -1,0 +1,23 @@
+.van-route-transition__right-leave-to,
+.van-route-transition__left-enter-from {
+  transform: translate3d(100%, 0, 0);
+}
+.van-route-transition__left-enter-active,
+.van-route-transition__left-leave-active,
+.van-route-transition__right-enter-active,
+.van-route-transition__right-leave-active {
+  position: absolute;
+  width: 100%;
+  transition: transform 0.35s ease;
+  will-change: transform;
+}
+.van-route-transition__left-enter-to,
+.van-route-transition__left-leave,
+.van-route-transition__right-enter-to,
+.van-route-transition__right-leave {
+  transform: translate3d(0, 0, 0);
+}
+.van-route-transition__left-leave-to,
+.van-route-transition__right-enter-from {
+  transform: translate3d(-100%, 0, 0);
+}
