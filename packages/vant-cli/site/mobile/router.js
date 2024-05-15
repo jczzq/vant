@@ -31,13 +31,16 @@ function getRoutes() {
         {
           path: 'home',
           component: () => import('./views/pro/home.vue'),
-          meta: { level: 1 },
+          meta: {
+            level: 1,
+            lang: 'zh-CN', // 设置默认语言
+          },
         },
         {
           path: 'color/:color',
           component: () => import('./views/pro/color.vue'),
           props: true,
-          meta: { level: 2 },
+          meta: { level: 2, lang: 'zh-CN' },
         },
       ],
     },

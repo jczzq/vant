@@ -1,9 +1,9 @@
 <template>
   <div class="pro-home">
     <CellGroup inset title="Favorite Color">
-      <Cell title="Aqua" is-link to="./color/aqua" />
-      <Cell title="Violet" is-link to="./color/violet" />
-      <Cell title="Bisque" is-link to="./color/bisque" />
+      <Cell title="Aqua" is-link to="/pro/color/aqua" />
+      <Cell title="Violet" is-link to="/pro/color/violet" />
+      <Cell title="Bisque" is-link to="/pro/color/bisque" />
     </CellGroup>
   </div>
 </template>
